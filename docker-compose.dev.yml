@@ -1,0 +1,91 @@
+version: '3'
+services:
+
+  postgres:
+    build: etl/postgres
+    image: postgres
+    restart: always
+    expose:
+      - ${DB_PORT}
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -q -d ${DB_NAME} -U ${DB_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - movies_admin
+
+  django:
+    build: movies_admin
+    image: movies_admin
+    restart: always
+    expose:
+      - ${DJANGO_PORT}
+    env_file:
+        - .env
+    volumes:
+      - ./movies_admin-static:/opt/app/static
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - movies_admin
+
+  nginx:
+    build: nginx
+    image: nginx
+    restart: always
+    ports:
+      - ${NGINX_PORT}:${NGINX_PORT}
+    volumes:
+      - ./movies_admin-static:/www/static
+    depends_on:
+      - django
+    networks:
+      - movies_admin
+
+  elastic:
+    image: ghcr.io/yp-middle-python-24/elasticsearch:8.7.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    restart: always
+    ports:
+      - ${ES_PORT}:${ES_PORT}
+    expose:
+      - ${ES_PORT}
+    volumes:
+      - ./elastic_data:/usr/share/elasticsearch/data
+    depends_on:
+      - django
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "${ES_SCHEME}://${ES_HOST}:${ES_PORT}/_cluster/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - movies_admin
+
+  etl:
+    build: etl
+    image: etl
+    env_file:
+      - .env
+    depends_on:
+      elastic:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - movies_admin
+
+
+networks:
+  movies_admin:
+    driver: bridge

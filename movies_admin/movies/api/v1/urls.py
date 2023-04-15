@@ -1,0 +1,11 @@
+"""
+URL settings for v1 of API of movies_admin project.
+"""
+
+from django.urls import path
+from .views import MoviesListApi, MoviesDetailApi
+
+urlpatterns = [
+    path('movies/', MoviesListApi.as_view()),
+    path('movies/<uuid:pk>/', MoviesDetailApi.as_view())
+]
