@@ -51,7 +51,7 @@ services:
       - movies_admin
 
   elastic:
-    image: ghcr.io/yp-middle-python-24/elasticsearch:8.7.0
+    image: elasticsearch:8.7.0
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
