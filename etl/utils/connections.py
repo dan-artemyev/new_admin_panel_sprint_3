@@ -1,6 +1,7 @@
 """
 Рвбота с соединениями
 """
+
 import json
 from typing import Tuple
 from http import HTTPStatus
@@ -12,9 +13,9 @@ from elastic_transport import ConnectionTimeout
 from psycopg2.extensions import connection as postgres_connection
 from elasticsearch import Elasticsearch, ConnectionError
 
-from utils import configuration
 from utils.logger import logger
 from utils.backoff import backoff
+from utils.configuration import PostgresDSL, ElasticDSL, ExtraConfig
 from state_storage.state import State, JsonFileStorage
 
 
@@ -24,13 +25,7 @@ def get_postgres_conn() -> postgres_connection:
     Установка соединения с PostgreSql.
     :return: соединение с PostgreSql
     """
-    dsl = {
-        'host': configuration.DB_HOST,
-        'port': configuration.DB_PORT,
-        'user': configuration.DB_USER,
-        'dbname': configuration.DB_NAME,
-        'password': configuration.DB_PASSWORD,
-    }
+    dsl = PostgresDSL().dict()
     logger.info('Connecting to Postgres...')
     connection = psycopg2.connect(**dsl, cursor_factory=DictCursor)
     connection.set_session(autocommit=True)
@@ -43,14 +38,9 @@ def get_elastic_conn() -> Elasticsearch:
     Установка соединения с ElasticSearch.
     :return: соединение с ElasticSearch
     """
-    hosts = [{
-        'scheme': configuration.ES_SCHEME,
-        'host': configuration.ES_HOST,
-        'port': configuration.ES_PORT,
-    }]
-    http_auth = (configuration.ES_USER, configuration.ES_PASSWORD)
+    hosts = [ElasticDSL().dict()]
     logger.info('Connecting to ElasticSearch...')
-    connection = Elasticsearch(retry_on_timeout=True, hosts=hosts, http_auth=http_auth)
+    connection = Elasticsearch(retry_on_timeout=True, hosts=hosts)
     set_elastic_index(connection)
     return connection
 
@@ -61,10 +51,11 @@ def set_elastic_index(connection: Elasticsearch) -> Elasticsearch:
     :param connection: соединение с ElasticSearch
     :return:
     """
-    with open(configuration.ES_INDEX_FILE, 'r') as index_file:
+    extra_config = ExtraConfig()
+    with open(extra_config.ES_INDEX_FILE, 'r') as index_file:
         mapping = json.load(index_file)
-    if not connection.indices.exists(index=configuration.ES_INDEX_NAME):
-        connection.indices.create(index=configuration.ES_INDEX_NAME, ignore=HTTPStatus.BAD_REQUEST, body=mapping)
+    if not connection.indices.exists(index=extra_config.ES_INDEX_NAME):
+        connection.indices.create(index=extra_config.ES_INDEX_NAME, ignore=HTTPStatus.BAD_REQUEST, body=mapping)
         logger.info('Creating Elastic index...')
     else:
         logger.info('Elastic index already exists...')
@@ -77,7 +68,7 @@ def get_state_storage() -> State:
     :return: хранилище состояний
     """
     logger.info('Connecting to state storage...')
-    state = State(JsonFileStorage(configuration.JSON_STATE_STORAGE_FILE))
+    state = State(JsonFileStorage(ExtraConfig().JSON_STATE_STORAGE_FILE))
     return state
 
 

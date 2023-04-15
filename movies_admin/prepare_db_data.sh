@@ -5,7 +5,7 @@ timeout 30 bash -c 'until nc -zv $DB_HOST $DB_PORT; do sleep 1; done'
 
 if [ $? -eq 0 ]; then
   echo "Database is available, running migrations..."
-  python manage.py makemigrations movies --settings=config.settings
+  python manage.py collectstatic --noinput
   python manage.py migrate
   python manage.py createsuperuser \
         --noinput \

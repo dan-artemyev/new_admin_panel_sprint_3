@@ -26,7 +26,7 @@ RUN  mkdir -p /var/www/static/ \
 COPY . .
 
 EXPOSE 8000
-RUN python manage.py collectstatic --noinput
+
 RUN chmod +x ./prepare_db_data.sh
 
 ENTRYPOINT ["./prepare_db_data.sh", "uwsgi", "--strict", "--ini", "uwsgi.ini"]

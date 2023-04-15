@@ -11,7 +11,7 @@ from psycopg2.extensions import connection as postgres_connection
 
 from utils.logger import logger
 from state_storage.state import State
-from utils.configuration import ES_TIMEOUT
+from utils.configuration import ExtraConfig
 from utils.connections import prepare_connections
 
 
@@ -41,4 +41,4 @@ if __name__ == '__main__':
     while True:
         with prepare_connections() as connections:
             load_data(*connections)
-        sleep(ES_TIMEOUT)
+        sleep(ExtraConfig().ES_TIMEOUT)

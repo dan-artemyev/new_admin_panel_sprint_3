@@ -6,15 +6,16 @@ from typing import Generator
 from elasticsearch import Elasticsearch, helpers
 
 from .data_formatter import FilmWorkModel
-from utils.configuration import ES_DATA_BLOCK_SIZE, ES_INDEX_NAME
+from utils.configuration import ExtraConfig
 from utils.logger import logger
 
 
 class ElasticSearchSaver:
     """Загрузчик фильмов в индекс ElasticSearch."""
 
-    data_block_size: int = ES_DATA_BLOCK_SIZE
-    index_name: str = ES_INDEX_NAME
+    extra_config = ExtraConfig()
+    data_block_size: int = extra_config.ES_DATA_BLOCK_SIZE
+    index_name: str = extra_config.ES_INDEX_NAME
 
     def __init__(self, elastic_connection: Elasticsearch):
         """

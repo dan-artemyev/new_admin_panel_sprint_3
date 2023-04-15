@@ -14,7 +14,7 @@ from psycopg2.extensions import connection as postgres_connection
 
 from utils.logger import logger
 from state_storage.state import State
-from utils.configuration import PSQL_DATA_BLOCK_SIZE
+from utils.configuration import ExtraConfig
 
 
 MIN_DATE_TIME = datetime.datetime.combine(datetime.datetime.min, datetime.time.min)
@@ -23,7 +23,7 @@ MIN_DATE_TIME = datetime.datetime.combine(datetime.datetime.min, datetime.time.m
 class Loader(ABC):
     """Абстрактный класс для загрузчиков."""
 
-    data_block_size = PSQL_DATA_BLOCK_SIZE
+    data_block_size = ExtraConfig().PSQL_DATA_BLOCK_SIZE
     scheme = 'content'
     table_name = None
 
@@ -136,6 +136,7 @@ class Loader(ABC):
             WHERE updated_at >= %s
             ORDER BY updated_at, id;
         ''').format(table=Identifier(self.scheme, self.table_name))
+        # использование format как в примерах в документации https://www.psycopg.org/docs/sql.html#module-usage
         yield from self._execute_sql(query, (self.modified_date, ))
 
     @abstractmethod
